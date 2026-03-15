@@ -50,16 +50,58 @@ def solve_rest(grid: list[list[str]]) -> None:
                 row[c] = str(min_neighbour + 1)
 
 
+def find_biggest_rectangle(grid: list[list[str]]) -> None:
+    """Solve the grid in-place to find the biggest rectangle without obstacles."""
+    score_first_row(grid[0])
+    get_tallest_rectangle_from_fields(grid)
+
+
+def score_first_row(first_row):
+    for i, c in enumerate(first_row):
+        if c == EMPTY:
+            first_row[i] = "1"
+
+
+def score_rest(grid):
+    for row in grid:
+        print(row)
+
+    for i, row in enumerate(grid):
+        print(f"resim {i}tou row - {row}")
+        for j, column in enumerate(row):
+            print(f"resim {j}ty column - {column}")
+            # Ignore obstacles
+            if column == EMPTY:
+                if grid[i - 1][j] != OBSTACLE:
+                    print(f"incrementing: {row[j]}")
+                    print(f"pricitam : {grid[i - 1][j]}")
+                    row[j] = str(int(grid[i - 1][j]) + 1)
+                else:
+                    row[j] = "1"
+
+
+def get_tallest_rectangle_from_fields(grid):
+    # TODO - put here logic to find highest from cosequent c cominations
+
+
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
+    """Parse command-line arguments with square/rectangle subcommands."""
     parser = argparse.ArgumentParser(
-        description="Find the biggest square without obstacles in a grid."
+        description="Find the biggest shape without obstacles in a grid."
     )
-    parser.add_argument(
-        "input_file",
-        type=Path,
-        help="Path to the input file containing the grid.",
-    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    for name, help_text in [
+        ("square", "Find the biggest square without obstacles."),
+        ("rectangle", "Find the biggest rectangle without obstacles."),
+    ]:
+        sub = subparsers.add_parser(name, help=help_text)
+        sub.add_argument(
+            "input_file",
+            type=Path,
+            help="Path to the input file containing the grid.",
+        )
+
     return parser.parse_args()
 
 
@@ -119,14 +161,12 @@ def parse_dimensions(line: str) -> tuple[int, int]:
     return width, height
 
 
-def main() -> int:
-    """Load grid from input file, solve, and print the result."""
-    args = parse_args()
+def load_grid(input_file: Path) -> tuple[list[list[str]], int, int]:
+    """Load and validate grid from input file. Returns (grid, width, height)."""
+    if not input_file.is_file():
+        raise FileNotFoundError(f"ERROR - File not found: {input_file}")
 
-    if not args.input_file.is_file():
-        raise FileNotFoundError(f"ERROR - File not found: {args.input_file}")
-
-    with open(args.input_file, "r", encoding="utf-8") as f:
+    with open(input_file, "r", encoding="utf-8") as f:
         data = f.readlines()
 
     if not data:
@@ -134,28 +174,69 @@ def main() -> int:
 
     width, height = parse_dimensions(data.pop(0))
     grid: list[list[str]] = [list(line.strip()) for line in data]
-
     validate_grid(grid, width, height)
+    return grid, width, height
 
-    count_obstacles = sum(row.count(OBSTACLE) for row in grid)
+
+def run_square(input_file: Path) -> int:
+    """Find the biggest square without obstacles and print the result."""
+    grid, width, height = load_grid(input_file)
+
+    count_obstacles: int = sum(row.count(OBSTACLE) for row in grid)
 
     if not count_obstacles:
-        area = min(height, width) ** 2
+        area: int = min(height, width) ** 2
         print(
             f"There are no obstacles in this room. Can fit a carpet with area of {area} cm2."
         )
+        return area
     if count_obstacles == height * width:
         print(
-            "There are only Obstacles in this room. Can fit no carpet in here, unless u have a flying one."
+            "There are only obstacles in this room. Can fit no carpet in here, unless you have a flying one."
         )
+        return 0
 
     find_biggest_square(grid)
 
     biggest_side: int = max(
-        int(field) for row in grid for field in row if not field.upper() == OBSTACLE
+        int(field) for row in grid for field in row if field.upper() != OBSTACLE
     )
-    area: int = biggest_side**2
+    area = biggest_side**2
     print(f"Biggest possible square carpet has an area of: {area} cm2.")
+    return area
+
+
+def run_rectangle(input_file: Path) -> int:
+    """Find the biggest rectangle without obstacles. ."""
+    grid, width, height = load_grid(input_file)
+
+    count_obstacles: int = sum(row.count(OBSTACLE) for row in grid)
+
+    if not count_obstacles:
+        area: int = height * width
+        print(
+            f"There are no obstacles in this room. Can fit a carpet with area of {area} cm2."
+        )
+        return area
+    if count_obstacles == height * width:
+        print(
+            "There are only obstacles in this room. Can fit no carpet in here, unless you have a flying one."
+        )
+        return 0
+
+    find_biggest_rectangle(grid)
+
+
+def main() -> int:
+    """Entry point — dispatch to square or rectangle based on subcommand."""
+    args = parse_args()
+
+    if args.command == "square":
+        return run_square(args.input_file)
+    elif args.command == "rectangle":
+        return run_rectangle(args.input_file)
+
+    return 0
 
 
 if __name__ == "__main__":
