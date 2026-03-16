@@ -53,6 +53,9 @@ def solve_rest(grid: list[list[str]]) -> None:
 def find_biggest_rectangle(grid: list[list[str]]) -> None:
     """Solve the grid in-place to find the biggest rectangle without obstacles."""
     score_first_row(grid[0])
+    score_rest(grid)
+    for row in grid:
+        print(row)
     get_tallest_rectangle_from_fields(grid)
 
 
@@ -80,8 +83,65 @@ def score_rest(grid):
                     row[j] = "1"
 
 
-def get_tallest_rectangle_from_fields(grid):
-    # TODO - put here logic to find highest from cosequent c cominations
+def scan_row(row):
+    for i, field in enumerate(row):
+        if row == OBSTACLE:
+            continue
+        checked_field_score = int(field)  # multiply this by the pop counter
+        poped_from_here = 0
+        # Create deep copy so i can pop from it without touchin the original
+        subrow = [f for f in row]
+
+        if i == 0:  # first check to right only ->
+            while len(subrow) > 1:
+                popped = subrow.pop(1)
+                if popped == OBSTACLE:
+                    print("obstacle - proceeding to next field")
+                    break
+                if int(popped) >= checked_field_score:  # Guard here for obstacle
+                    poped_from_here += 1
+                    print(f"popped {popped} from right")
+        elif i == len(1 - row):  # last check to left only <-
+            while len(subrow) > 1:
+                popped = subrow.pop(-2)
+                if popped == OBSTACLE:
+                    print("obstacle - proceeding to next field")
+                    break
+                if int(popped) >= checked_field_score:  # Guard here for obstacle
+                    poped_from_here += 1
+        else:  # field somewhere in the middle
+            while len(subrow) > 1:
+                # Check to left first
+                for _ in range(i):  # count fields to left of checked field
+                    popped = subrow.pop(-2)
+                    if popped == OBSTACLE:
+                        print("obstacle - proceeding to next field")
+                        break
+                    if int(popped) >= checked_field_score:  # Guard here for obstacle
+                        poped_from_here += 1
+                        print(f"popped {popped} from left")
+            # TODO Check to the right next
+
+
+def find_biggest_rectangle(grid):
+    for row in grid:
+        biggest_rect_up_this_row = scan_row(row)
+
+    #     print(f"field {i} - {field}")
+    #         print("not an obstacle")
+    #         all_combinations_this_field = []
+    #         print(f"extracting combinations from subset: {subrow}")
+    #         for j, other_f in enumerate(subrow):
+    #             print(f"Checking combs up to {j}th subrow element - {other_f}")
+    #             if other_f == OBSTACLE:
+    #                 print("obstacle - proceeding to next field")
+    #                 break
+    #             print("not an obstacle")
+    #             all_combinations_this_field.append(subrow)
+    #     else:
+    #         print("obstacle - skipping")
+
+    # input(f"Combinations this row: {all_combinations_this_field}")
 
 
 def parse_args() -> argparse.Namespace:
