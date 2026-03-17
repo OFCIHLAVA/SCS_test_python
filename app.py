@@ -36,8 +36,12 @@ def solve_rest(grid: list[list[str]]) -> None:
      corner of the biggest possible carpet.
     """
     for r, row in enumerate(grid):
+        if r == 0:  # first row already solved
+            continue
         for c, column in enumerate(row):
-            if column.upper() == EMPTY:
+            if c == 0:  # first column already solved
+                continue
+            if column == EMPTY:
                 neighbours: list[str] = [
                     row[c - 1],
                     grid[r - 1][c],
@@ -56,7 +60,14 @@ def find_biggest_rectangle(grid: list[list[str]]) -> None:
     score_rest(grid)
     for row in grid:
         print(row)
-    get_tallest_rectangle_from_fields(grid)
+    biggest = 0
+    for row in grid:
+        print(f"Checking row: {row} for biggets rectangle")
+        biggest_this_row = get_biggest_this_row(row)
+        if biggest_this_row > biggest:
+            biggest = biggest_this_row
+    print(f"Can fit biggest square: {biggest}")
+    return biggest
 
 
 def score_first_row(first_row):
@@ -66,82 +77,70 @@ def score_first_row(first_row):
 
 
 def score_rest(grid):
-    for row in grid:
-        print(row)
 
     for i, row in enumerate(grid):
-        print(f"resim {i}tou row - {row}")
+        if i == 0:
+            continue  # first row already solved
         for j, column in enumerate(row):
-            print(f"resim {j}ty column - {column}")
-            # Ignore obstacles
             if column == EMPTY:
-                if grid[i - 1][j] != OBSTACLE:
-                    print(f"incrementing: {row[j]}")
-                    print(f"pricitam : {grid[i - 1][j]}")
-                    row[j] = str(int(grid[i - 1][j]) + 1)
+                field_above = grid[i - 1][j]
+                if field_above.upper() != OBSTACLE:
+                    row[j] = str(int(field_above) + 1)
                 else:
                     row[j] = "1"
 
 
-def scan_row(row):
+def get_biggest_this_row(row):
+    max_area_rectangles_this_row = [0]
     for i, field in enumerate(row):
-        if row == OBSTACLE:
+        print(f"    Checking {i}th field - {field}")
+        if field.upper() == OBSTACLE:
+            print("     obstacle - proceeding to next field")
             continue
         checked_field_score = int(field)  # multiply this by the pop counter
         poped_from_here = 0
-        # Create deep copy so i can pop from it without touchin the original
+        # Create copy so i can pop from it without messing the original's indexes
         subrow = [f for f in row]
 
-        if i == 0:  # first check to right only ->
-            while len(subrow) > 1:
-                popped = subrow.pop(1)
-                if popped == OBSTACLE:
-                    print("obstacle - proceeding to next field")
-                    break
-                if int(popped) >= checked_field_score:  # Guard here for obstacle
-                    poped_from_here += 1
-                    print(f"popped {popped} from right")
-        elif i == len(1 - row):  # last check to left only <-
-            while len(subrow) > 1:
-                popped = subrow.pop(-2)
-                if popped == OBSTACLE:
-                    print("obstacle - proceeding to next field")
-                    break
-                if int(popped) >= checked_field_score:  # Guard here for obstacle
-                    poped_from_here += 1
-        else:  # field somewhere in the middle
-            while len(subrow) > 1:
-                # Check to left first
-                for _ in range(i):  # count fields to left of checked field
-                    popped = subrow.pop(-2)
-                    if popped == OBSTACLE:
-                        print("obstacle - proceeding to next field")
-                        break
-                    if int(popped) >= checked_field_score:  # Guard here for obstacle
-                        poped_from_here += 1
-                        print(f"popped {popped} from left")
-            # TODO Check to the right next
+        fields_to_left = subrow[:i]
+        fields_to_right = subrow[i + 1 :]
+        # Check to the left first
+        while fields_to_left:
+            print("     Checking next field to the left")
+            popped = fields_to_left.pop()
+            if popped.upper() == OBSTACLE:  # Guard here for obstacle
+                print("     obstacle - proceeding to next field")
+                break
+            if int(popped) >= checked_field_score:
+                poped_from_here += 1
+                print(f"    Left field equal or bigger {popped} - expanding")
+            else:
+                print(
+                    f"      Left field lower {popped} than current field. Stopping and proceeding to next field."
+                )
+                break
+        while fields_to_right:
+            print("     Checking next field to the right")
+            popped = fields_to_right.pop(0)
+            if popped.upper() == OBSTACLE:  # Guard here for obstacle
+                print("     obstacle - proceeding to next field")
+                break
+            if int(popped) >= checked_field_score:
+                poped_from_here += 1
+                print(f"    Right field equal or bigger {popped} - expanding")
+            else:
+                print(
+                    f"      Right field lower {popped} than current field. Stopping and proceeding to next field."
+                )
+                break
 
-
-def find_biggest_rectangle(grid):
-    for row in grid:
-        biggest_rect_up_this_row = scan_row(row)
-
-    #     print(f"field {i} - {field}")
-    #         print("not an obstacle")
-    #         all_combinations_this_field = []
-    #         print(f"extracting combinations from subset: {subrow}")
-    #         for j, other_f in enumerate(subrow):
-    #             print(f"Checking combs up to {j}th subrow element - {other_f}")
-    #             if other_f == OBSTACLE:
-    #                 print("obstacle - proceeding to next field")
-    #                 break
-    #             print("not an obstacle")
-    #             all_combinations_this_field.append(subrow)
-    #     else:
-    #         print("obstacle - skipping")
-
-    # input(f"Combinations this row: {all_combinations_this_field}")
+        # TODO Check to the right next
+        biggest_are_rect_this_field = (
+            poped_from_here + 1
+        ) * checked_field_score  # +1 for checked field itself
+        # input(f"    Biggest rect field: {i}: {biggest_are_rect_this_field}\n")
+        max_area_rectangles_this_row.append(biggest_are_rect_this_field)
+    return max(max_area_rectangles_this_row)
 
 
 def parse_args() -> argparse.Namespace:
@@ -189,7 +188,7 @@ def validate_grid(grid: list[list[str]], width: int, height: int) -> None:
         )
 
     symbols_present = {symbol for row in grid for symbol in row}
-    invalid = symbols_present - {OBSTACLE, EMPTY}
+    invalid = symbols_present - {OBSTACLE, OBSTACLE.lower(), EMPTY}
     if invalid:
         raise ValueError(
             f"ERROR - Input grid contains invalid symbols: {invalid}. Only '{EMPTY}' and '{OBSTACLE}' are allowed."
@@ -242,8 +241,9 @@ def run_square(input_file: Path) -> int:
     """Find the biggest square without obstacles and print the result."""
     grid, width, height = load_grid(input_file)
 
-    count_obstacles: int = sum(row.count(OBSTACLE) for row in grid)
-
+    count_obstacles: int = sum(
+        row.count(OBSTACLE) + row.count(OBSTACLE.lower()) for row in grid
+    )
     if not count_obstacles:
         area: int = min(height, width) ** 2
         print(
@@ -270,7 +270,9 @@ def run_rectangle(input_file: Path) -> int:
     """Find the biggest rectangle without obstacles. ."""
     grid, width, height = load_grid(input_file)
 
-    count_obstacles: int = sum(row.count(OBSTACLE) for row in grid)
+    count_obstacles: int = sum(
+        row.count(OBSTACLE) + row.count(OBSTACLE.lower()) for row in grid
+    )
 
     if not count_obstacles:
         area: int = height * width
@@ -284,7 +286,7 @@ def run_rectangle(input_file: Path) -> int:
         )
         return 0
 
-    find_biggest_rectangle(grid)
+    return find_biggest_rectangle(grid)
 
 
 def main() -> int:
