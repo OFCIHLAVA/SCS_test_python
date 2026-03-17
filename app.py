@@ -1,5 +1,8 @@
 import argparse
+import logging
 from pathlib import Path
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 OBSTACLE = "X"
 EMPTY = "."
@@ -16,13 +19,16 @@ class SqrFinder:
         count_obstacles: int = _count_obstacles(grid)
         if not count_obstacles:
             area: int = min(height, width) ** 2
-            print(
-                f"There are no obstacles in this room. Can fit a carpet with area of {area} cm2."
+            logger.info(
+                "There are no obstacles in this room. "
+                "Can fit a carpet with area of %d cm2.",
+                area,
             )
             return area
         if count_obstacles == height * width:
-            print(
-                "There are only obstacles in this room. Can fit no carpet in here, unless you have a flying one."
+            logger.info(
+                "There are only obstacles in this room. "
+                "Can fit no carpet in here, unless you have a flying one."
             )
             return 0
 
@@ -32,7 +38,7 @@ class SqrFinder:
             int(field) for row in grid for field in row if field.upper() != OBSTACLE
         )
         area = biggest_side**2
-        print(f"Biggest possible square carpet has an area of: {area} cm2.")
+        logger.info("Biggest possible square carpet has an area of: %d cm2.", area)
         return area
 
     @staticmethod
@@ -98,13 +104,16 @@ class RectFinder:
         count_obstacles: int = _count_obstacles(grid)
         if not count_obstacles:
             area: int = height * width
-            print(
-                f"There are no obstacles in this room. Can fit a carpet with area of {area} cm2."
+            logger.info(
+                "There are no obstacles in this room. "
+                "Can fit a carpet with area of %d cm2.",
+                area,
             )
             return area
         if count_obstacles == height * width:
-            print(
-                "There are only obstacles in this room. Can fit no carpet in here, unless you have a flying one."
+            logger.info(
+                "There are only obstacles in this room. "
+                "Can fit no carpet in here, unless you have a flying one."
             )
             return 0
 
@@ -116,14 +125,17 @@ class RectFinder:
         RectFinder._score_first_row(grid[0])
         RectFinder._score_rest(grid)
         for row in grid:
-            print(row)
+            logger.debug("%s", row)
         biggest: int = 0
         for row in grid:
-            print(f"Checking row: {row} for biggets rectangle")
+            logger.debug("Checking row: %s for biggest rectangle", row)
             biggest_this_row: int = RectFinder._get_biggest_this_row(row)
             if biggest_this_row > biggest:
                 biggest = biggest_this_row
-        print(f"Biggest possible rectangle carpet has an area of: {biggest} cm2.")
+        logger.info(
+            "Biggest possible rectangle carpet has an area of: %d cm2.",
+            biggest,
+        )
         return biggest
 
     @staticmethod
@@ -161,9 +173,7 @@ class RectFinder:
         """
         max_area_rectangles_this_row: list[int] = [0]
         for i, field in enumerate(row):
-            print(f"    Checking {i}th field - {field}")
             if field.upper() == OBSTACLE:
-                print("     obstacle - proceeding to next field")
                 continue
             checked_field_score: int = int(field)
             poped_from_here: int = 0
@@ -172,32 +182,20 @@ class RectFinder:
             fields_to_left: list[str] = subrow[:i]
             fields_to_right: list[str] = subrow[i + 1 :]
             while fields_to_left:
-                print("     Checking next field to the left")
-                popped = fields_to_left.pop()
+                popped: str = fields_to_left.pop()
                 if popped.upper() == OBSTACLE:
-                    print("     obstacle - proceeding to next field")
                     break
                 if int(popped) >= checked_field_score:
                     poped_from_here += 1
-                    print(f"    Left field equal or bigger {popped} - expanding")
                 else:
-                    print(
-                        f"      Left field lower {popped} than current field. Stopping and proceeding to next field."
-                    )
                     break
             while fields_to_right:
-                print("     Checking next field to the right")
                 popped = fields_to_right.pop(0)
                 if popped.upper() == OBSTACLE:
-                    print("     obstacle - proceeding to next field")
                     break
                 if int(popped) >= checked_field_score:
                     poped_from_here += 1
-                    print(f"    Right field equal or bigger {popped} - expanding")
                 else:
-                    print(
-                        f"      Right field lower {popped} than current field. Stopping and proceeding to next field."
-                    )
                     break
 
             biggest_are_rect_this_field: int = (
@@ -238,7 +236,7 @@ def validate_grid(grid: list[list[str]], width: int, height: int) -> None:
     if not grid:
         raise ValueError("ERROR - Grid is empty, no rows found.")
 
-    row_lengths = set(len(row) for row in grid)
+    row_lengths: set[int] = set(len(row) for row in grid)
     if len(row_lengths) != 1:
         raise ValueError(
             "ERROR - Input grid is not rectangular. Rows have different lengths."
@@ -256,11 +254,12 @@ def validate_grid(grid: list[list[str]], width: int, height: int) -> None:
             f"ERROR - Input grid height {len(grid)} does not match expected height {height}."
         )
 
-    symbols_present = {symbol for row in grid for symbol in row}
-    invalid = symbols_present - {OBSTACLE, OBSTACLE.lower(), EMPTY}
+    symbols_present: set[str] = {symbol for row in grid for symbol in row}
+    invalid: set[str] = symbols_present - {OBSTACLE, OBSTACLE.lower(), EMPTY}
     if invalid:
         raise ValueError(
-            f"ERROR - Input grid contains invalid symbols: {invalid}. Only '{EMPTY}' and '{OBSTACLE}' are allowed."
+            f"ERROR - Input grid contains invalid symbols: {invalid}. "
+            f"Only '{EMPTY}' and '{OBSTACLE}' are allowed."
         )
 
 
@@ -272,7 +271,7 @@ def parse_dimensions(line: str) -> tuple[int, int]:
     - No space: "54" (single-digit only, first char = width, second = height)
     """
     try:
-        parts = line.strip().split()
+        parts: list[str] = line.strip().split()
         if len(parts) == 2:
             width, height = int(parts[0]), int(parts[1])
         elif len(parts) == 1 and len(parts[0]) == 2:
@@ -295,7 +294,7 @@ def load_grid(input_file: Path) -> tuple[list[list[str]], int, int]:
         raise FileNotFoundError(f"ERROR - File not found: {input_file}")
 
     with open(input_file, "r", encoding="utf-8") as f:
-        data = f.readlines()
+        data: list[str] = f.readlines()
 
     if not data:
         raise ValueError("ERROR - Input file is empty.")
@@ -308,7 +307,12 @@ def load_grid(input_file: Path) -> tuple[list[list[str]], int, int]:
 
 def main() -> int:
     """Entry point — dispatch to square or rectangle based on subcommand."""
-    args = parse_args()
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+
+    args: argparse.Namespace = parse_args()
 
     if args.command == "square":
         return SqrFinder.run(args.input_file)
