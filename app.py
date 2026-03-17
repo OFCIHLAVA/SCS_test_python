@@ -9,7 +9,7 @@ EMPTY = "."
 
 
 class SqrFinder:
-    """Finds the biggest square without obstacles in a grid using DP."""
+    """Finds the biggest square without obstacles in a grid."""
 
     @staticmethod
     def run(input_file: Path) -> int:
@@ -49,7 +49,7 @@ class SqrFinder:
 
     @staticmethod
     def _init_borders(grid: list[list[str]]) -> None:
-        """Initialize first row and first column of the DP grid.
+        """Initialize first row and first column of the grid.
 
         Any non-obstacle cell in the first row or column can only form a 1x1 square,
         so it gets value "1".
