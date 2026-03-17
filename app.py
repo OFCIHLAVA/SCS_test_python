@@ -176,7 +176,7 @@ class RectFinder:
             if field.upper() == OBSTACLE:
                 continue
             checked_field_score: int = int(field)
-            poped_from_here: int = 0
+            popped_from_here: int = 0
             subrow: list[str] = [f for f in row]
 
             fields_to_left: list[str] = subrow[:i]
@@ -186,7 +186,7 @@ class RectFinder:
                 if popped.upper() == OBSTACLE:
                     break
                 if int(popped) >= checked_field_score:
-                    poped_from_here += 1
+                    popped_from_here += 1
                 else:
                     break
             while fields_to_right:
@@ -194,14 +194,14 @@ class RectFinder:
                 if popped.upper() == OBSTACLE:
                     break
                 if int(popped) >= checked_field_score:
-                    poped_from_here += 1
+                    popped_from_here += 1
                 else:
                     break
 
-            biggest_are_rect_this_field: int = (
-                poped_from_here + 1
+            biggest_area_rect_this_field: int = (
+                popped_from_here + 1
             ) * checked_field_score
-            max_area_rectangles_this_row.append(biggest_are_rect_this_field)
+            max_area_rectangles_this_row.append(biggest_area_rect_this_field)
         return max(max_area_rectangles_this_row)
 
 
@@ -315,9 +315,9 @@ def main() -> int:
     args: argparse.Namespace = parse_args()
 
     if args.command == "square":
-        return SqrFinder.run(args.input_file)
+        SqrFinder.run(args.input_file)
     elif args.command == "rectangle":
-        return RectFinder.run(args.input_file)
+        RectFinder.run(args.input_file)
 
     return 0
 
