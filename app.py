@@ -60,11 +60,13 @@ class SqrFinder:
     def _solve_rest(grid: list[list[str]]) -> None:
         """Solve remaining fields using dynamic programming.
 
-        NOTE: Key is to solve fields from one corner to opposite one (this app starts in top left). For each field without
-         obstacle, record biggest possible square that has its farthest corner in that field. If all 3 neighbour fields
-         closest to the starting corner already have a number, use minimum amongst them +1 for this field. If any of these
-         3 has obstacle in them, put 1 to this field. Highest number represents the farthest from the starting corner square
-         corner of the biggest possible carpet.
+        Solve fields from top-left to bottom-right. For each
+        non-obstacle field, record the biggest possible square that
+        has its farthest corner in that field. If all three neighbour
+        fields closest to the starting corner already have a number,
+        use the minimum amongst them plus one. If any neighbour is an
+        obstacle, set this field to one. The highest number represents
+        the side length of the biggest possible square carpet.
         """
         for r, row in enumerate(grid):
             if r == 0:
@@ -115,10 +117,10 @@ class RectFinder:
         RectFinder._score_rest(grid)
         for row in grid:
             print(row)
-        biggest = 0
+        biggest: int = 0
         for row in grid:
             print(f"Checking row: {row} for biggets rectangle")
-            biggest_this_row = RectFinder._get_biggest_this_row(row)
+            biggest_this_row: int = RectFinder._get_biggest_this_row(row)
             if biggest_this_row > biggest:
                 biggest = biggest_this_row
         print(f"Biggest possible rectangle carpet has an area of: {biggest} cm2.")
@@ -126,18 +128,24 @@ class RectFinder:
 
     @staticmethod
     def _score_first_row(first_row: list[str]) -> None:
+        """Score the first row in-place, marking empty cells as '1'."""
         for i, c in enumerate(first_row):
             if c == EMPTY:
                 first_row[i] = "1"
 
     @staticmethod
     def _score_rest(grid: list[list[str]]) -> None:
+        """Score remaining rows by counting consecutive empty cells above.
+
+        Each empty cell gets a score equal to the cell above it plus one,
+        or '1' if the cell above is an obstacle.
+        """
         for i, row in enumerate(grid):
             if i == 0:
                 continue
             for j, column in enumerate(row):
                 if column == EMPTY:
-                    field_above = grid[i - 1][j]
+                    field_above: str = grid[i - 1][j]
                     if field_above.upper() != OBSTACLE:
                         row[j] = str(int(field_above) + 1)
                     else:
@@ -145,18 +153,24 @@ class RectFinder:
 
     @staticmethod
     def _get_biggest_this_row(row: list[str]) -> int:
-        max_area_rectangles_this_row = [0]
+        """Find the largest rectangle area anchored in a single row.
+
+        For each scored cell, expand left and right while neighbours
+        have scores greater than or equal to the current cell, then
+        compute the rectangle area as width times the cell score.
+        """
+        max_area_rectangles_this_row: list[int] = [0]
         for i, field in enumerate(row):
             print(f"    Checking {i}th field - {field}")
             if field.upper() == OBSTACLE:
                 print("     obstacle - proceeding to next field")
                 continue
-            checked_field_score = int(field)
-            poped_from_here = 0
-            subrow = [f for f in row]
+            checked_field_score: int = int(field)
+            poped_from_here: int = 0
+            subrow: list[str] = [f for f in row]
 
-            fields_to_left = subrow[:i]
-            fields_to_right = subrow[i + 1 :]
+            fields_to_left: list[str] = subrow[:i]
+            fields_to_right: list[str] = subrow[i + 1 :]
             while fields_to_left:
                 print("     Checking next field to the left")
                 popped = fields_to_left.pop()
@@ -186,7 +200,9 @@ class RectFinder:
                     )
                     break
 
-            biggest_are_rect_this_field = (poped_from_here + 1) * checked_field_score
+            biggest_are_rect_this_field: int = (
+                poped_from_here + 1
+            ) * checked_field_score
             max_area_rectangles_this_row.append(biggest_are_rect_this_field)
         return max(max_area_rectangles_this_row)
 
