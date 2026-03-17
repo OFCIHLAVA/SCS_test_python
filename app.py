@@ -5,142 +5,195 @@ OBSTACLE = "X"
 EMPTY = "."
 
 
-def find_biggest_square(grid: list[list[str]]) -> None:
-    """Solve the grid in-place to find the biggest square without obstacles."""
-    solve_top_left_first_rows(grid)
-    solve_rest(grid)
+class SqrFinder:
+    """Finds the biggest square without obstacles in a grid using DP."""
 
+    @staticmethod
+    def run(input_file: Path) -> int:
+        """Find the biggest square without obstacles and print the result."""
+        grid, width, height = load_grid(input_file)
 
-def solve_top_left_first_rows(grid: list[list[str]]) -> None:
-    """Initialize first row and first column of the DP grid.
+        count_obstacles: int = _count_obstacles(grid)
+        if not count_obstacles:
+            area: int = min(height, width) ** 2
+            print(
+                f"There are no obstacles in this room. Can fit a carpet with area of {area} cm2."
+            )
+            return area
+        if count_obstacles == height * width:
+            print(
+                "There are only obstacles in this room. Can fit no carpet in here, unless you have a flying one."
+            )
+            return 0
 
-    Any non-obstacle cell in the first row or column can only form a 1x1 square,
-    so it gets value "1".
-    """
-    for i, field in enumerate(grid[0]):
-        if field.upper() != OBSTACLE:
-            grid[0][i] = "1"
+        SqrFinder._solve(grid)
 
-    for row in grid:
-        if row[0].upper() != OBSTACLE:
-            row[0] = "1"
+        biggest_side: int = max(
+            int(field) for row in grid for field in row if field.upper() != OBSTACLE
+        )
+        area = biggest_side**2
+        print(f"Biggest possible square carpet has an area of: {area} cm2.")
+        return area
 
+    @staticmethod
+    def _solve(grid: list[list[str]]) -> None:
+        """Solve the grid in-place to find the biggest square without obstacles."""
+        SqrFinder._init_borders(grid)
+        SqrFinder._solve_rest(grid)
 
-def solve_rest(grid: list[list[str]]) -> None:
-    """Solve remaining fields using dynamic programming.
+    @staticmethod
+    def _init_borders(grid: list[list[str]]) -> None:
+        """Initialize first row and first column of the DP grid.
 
-    NOTE: Key is to solve fields from one corner to opposite one (this app starts in top left). For each field without
-     obstacle, record biggest possible square that has its farthest corner in that field. If all 3 neighbour fields
-     closest to the starting corner already have a number, use minimum amongst them +1 for this field. If any of these
-     3 has obstacle in them, put 1 to this field. Highest number represents the farthest from the starting corner square
-     corner of the biggest possible carpet.
-    """
-    for r, row in enumerate(grid):
-        if r == 0:  # first row already solved
-            continue
-        for c, column in enumerate(row):
-            if c == 0:  # first column already solved
+        Any non-obstacle cell in the first row or column can only form a 1x1 square,
+        so it gets value "1".
+        """
+        for i, field in enumerate(grid[0]):
+            if field.upper() != OBSTACLE:
+                grid[0][i] = "1"
+
+        for row in grid:
+            if row[0].upper() != OBSTACLE:
+                row[0] = "1"
+
+    @staticmethod
+    def _solve_rest(grid: list[list[str]]) -> None:
+        """Solve remaining fields using dynamic programming.
+
+        NOTE: Key is to solve fields from one corner to opposite one (this app starts in top left). For each field without
+         obstacle, record biggest possible square that has its farthest corner in that field. If all 3 neighbour fields
+         closest to the starting corner already have a number, use minimum amongst them +1 for this field. If any of these
+         3 has obstacle in them, put 1 to this field. Highest number represents the farthest from the starting corner square
+         corner of the biggest possible carpet.
+        """
+        for r, row in enumerate(grid):
+            if r == 0:
                 continue
-            if column == EMPTY:
-                neighbours: list[str] = [
-                    row[c - 1],
-                    grid[r - 1][c],
-                    grid[r - 1][c - 1],
-                ]  # left, top, and top-left diagonal neighbour fields.
-                if any(n.upper() == OBSTACLE for n in neighbours):
-                    row[c] = "1"
+            for c, column in enumerate(row):
+                if c == 0:
                     continue
-                min_neighbour: int = min(int(n) for n in neighbours)
-                row[c] = str(min_neighbour + 1)
+                if column == EMPTY:
+                    neighbours: list[str] = [
+                        row[c - 1],
+                        grid[r - 1][c],
+                        grid[r - 1][c - 1],
+                    ]
+                    if any(n.upper() == OBSTACLE for n in neighbours):
+                        row[c] = "1"
+                        continue
+                    min_neighbour: int = min(int(n) for n in neighbours)
+                    row[c] = str(min_neighbour + 1)
 
 
-def find_biggest_rectangle(grid: list[list[str]]) -> None:
-    """Solve the grid in-place to find the biggest rectangle without obstacles."""
-    score_first_row(grid[0])
-    score_rest(grid)
-    for row in grid:
-        print(row)
-    biggest = 0
-    for row in grid:
-        print(f"Checking row: {row} for biggets rectangle")
-        biggest_this_row = get_biggest_this_row(row)
-        if biggest_this_row > biggest:
-            biggest = biggest_this_row
-    print(f"Can fit biggest square: {biggest}")
-    return biggest
+class RectFinder:
+    """Finds the biggest rectangle without obstacles in a grid."""
 
+    @staticmethod
+    def run(input_file: Path) -> int:
+        """Find the biggest rectangle without obstacles."""
+        grid, width, height = load_grid(input_file)
 
-def score_first_row(first_row):
-    for i, c in enumerate(first_row):
-        if c == EMPTY:
-            first_row[i] = "1"
+        count_obstacles: int = _count_obstacles(grid)
+        if not count_obstacles:
+            area: int = height * width
+            print(
+                f"There are no obstacles in this room. Can fit a carpet with area of {area} cm2."
+            )
+            return area
+        if count_obstacles == height * width:
+            print(
+                "There are only obstacles in this room. Can fit no carpet in here, unless you have a flying one."
+            )
+            return 0
 
+        return RectFinder._solve(grid)
 
-def score_rest(grid):
+    @staticmethod
+    def _solve(grid: list[list[str]]) -> int:
+        """Solve the grid in-place to find the biggest rectangle without obstacles."""
+        RectFinder._score_first_row(grid[0])
+        RectFinder._score_rest(grid)
+        for row in grid:
+            print(row)
+        biggest = 0
+        for row in grid:
+            print(f"Checking row: {row} for biggets rectangle")
+            biggest_this_row = RectFinder._get_biggest_this_row(row)
+            if biggest_this_row > biggest:
+                biggest = biggest_this_row
+        print(f"Biggest possible rectangle carpet has an area of: {biggest} cm2.")
+        return biggest
 
-    for i, row in enumerate(grid):
-        if i == 0:
-            continue  # first row already solved
-        for j, column in enumerate(row):
-            if column == EMPTY:
-                field_above = grid[i - 1][j]
-                if field_above.upper() != OBSTACLE:
-                    row[j] = str(int(field_above) + 1)
+    @staticmethod
+    def _score_first_row(first_row: list[str]) -> None:
+        for i, c in enumerate(first_row):
+            if c == EMPTY:
+                first_row[i] = "1"
+
+    @staticmethod
+    def _score_rest(grid: list[list[str]]) -> None:
+        for i, row in enumerate(grid):
+            if i == 0:
+                continue
+            for j, column in enumerate(row):
+                if column == EMPTY:
+                    field_above = grid[i - 1][j]
+                    if field_above.upper() != OBSTACLE:
+                        row[j] = str(int(field_above) + 1)
+                    else:
+                        row[j] = "1"
+
+    @staticmethod
+    def _get_biggest_this_row(row: list[str]) -> int:
+        max_area_rectangles_this_row = [0]
+        for i, field in enumerate(row):
+            print(f"    Checking {i}th field - {field}")
+            if field.upper() == OBSTACLE:
+                print("     obstacle - proceeding to next field")
+                continue
+            checked_field_score = int(field)
+            poped_from_here = 0
+            subrow = [f for f in row]
+
+            fields_to_left = subrow[:i]
+            fields_to_right = subrow[i + 1 :]
+            while fields_to_left:
+                print("     Checking next field to the left")
+                popped = fields_to_left.pop()
+                if popped.upper() == OBSTACLE:
+                    print("     obstacle - proceeding to next field")
+                    break
+                if int(popped) >= checked_field_score:
+                    poped_from_here += 1
+                    print(f"    Left field equal or bigger {popped} - expanding")
                 else:
-                    row[j] = "1"
+                    print(
+                        f"      Left field lower {popped} than current field. Stopping and proceeding to next field."
+                    )
+                    break
+            while fields_to_right:
+                print("     Checking next field to the right")
+                popped = fields_to_right.pop(0)
+                if popped.upper() == OBSTACLE:
+                    print("     obstacle - proceeding to next field")
+                    break
+                if int(popped) >= checked_field_score:
+                    poped_from_here += 1
+                    print(f"    Right field equal or bigger {popped} - expanding")
+                else:
+                    print(
+                        f"      Right field lower {popped} than current field. Stopping and proceeding to next field."
+                    )
+                    break
+
+            biggest_are_rect_this_field = (poped_from_here + 1) * checked_field_score
+            max_area_rectangles_this_row.append(biggest_are_rect_this_field)
+        return max(max_area_rectangles_this_row)
 
 
-def get_biggest_this_row(row):
-    max_area_rectangles_this_row = [0]
-    for i, field in enumerate(row):
-        print(f"    Checking {i}th field - {field}")
-        if field.upper() == OBSTACLE:
-            print("     obstacle - proceeding to next field")
-            continue
-        checked_field_score = int(field)  # multiply this by the pop counter
-        poped_from_here = 0
-        # Create copy so i can pop from it without messing the original's indexes
-        subrow = [f for f in row]
-
-        fields_to_left = subrow[:i]
-        fields_to_right = subrow[i + 1 :]
-        # Check to the left first
-        while fields_to_left:
-            print("     Checking next field to the left")
-            popped = fields_to_left.pop()
-            if popped.upper() == OBSTACLE:  # Guard here for obstacle
-                print("     obstacle - proceeding to next field")
-                break
-            if int(popped) >= checked_field_score:
-                poped_from_here += 1
-                print(f"    Left field equal or bigger {popped} - expanding")
-            else:
-                print(
-                    f"      Left field lower {popped} than current field. Stopping and proceeding to next field."
-                )
-                break
-        while fields_to_right:
-            print("     Checking next field to the right")
-            popped = fields_to_right.pop(0)
-            if popped.upper() == OBSTACLE:  # Guard here for obstacle
-                print("     obstacle - proceeding to next field")
-                break
-            if int(popped) >= checked_field_score:
-                poped_from_here += 1
-                print(f"    Right field equal or bigger {popped} - expanding")
-            else:
-                print(
-                    f"      Right field lower {popped} than current field. Stopping and proceeding to next field."
-                )
-                break
-
-        # TODO Check to the right next
-        biggest_are_rect_this_field = (
-            poped_from_here + 1
-        ) * checked_field_score  # +1 for checked field itself
-        # input(f"    Biggest rect field: {i}: {biggest_are_rect_this_field}\n")
-        max_area_rectangles_this_row.append(biggest_are_rect_this_field)
-    return max(max_area_rectangles_this_row)
+def _count_obstacles(grid: list[list[str]]) -> int:
+    """Count total obstacle cells in the grid."""
+    return sum(row.count(OBSTACLE) + row.count(OBSTACLE.lower()) for row in grid)
 
 
 def parse_args() -> argparse.Namespace:
@@ -237,66 +290,14 @@ def load_grid(input_file: Path) -> tuple[list[list[str]], int, int]:
     return grid, width, height
 
 
-def run_square(input_file: Path) -> int:
-    """Find the biggest square without obstacles and print the result."""
-    grid, width, height = load_grid(input_file)
-
-    count_obstacles: int = sum(
-        row.count(OBSTACLE) + row.count(OBSTACLE.lower()) for row in grid
-    )
-    if not count_obstacles:
-        area: int = min(height, width) ** 2
-        print(
-            f"There are no obstacles in this room. Can fit a carpet with area of {area} cm2."
-        )
-        return area
-    if count_obstacles == height * width:
-        print(
-            "There are only obstacles in this room. Can fit no carpet in here, unless you have a flying one."
-        )
-        return 0
-
-    find_biggest_square(grid)
-
-    biggest_side: int = max(
-        int(field) for row in grid for field in row if field.upper() != OBSTACLE
-    )
-    area = biggest_side**2
-    print(f"Biggest possible square carpet has an area of: {area} cm2.")
-    return area
-
-
-def run_rectangle(input_file: Path) -> int:
-    """Find the biggest rectangle without obstacles. ."""
-    grid, width, height = load_grid(input_file)
-
-    count_obstacles: int = sum(
-        row.count(OBSTACLE) + row.count(OBSTACLE.lower()) for row in grid
-    )
-
-    if not count_obstacles:
-        area: int = height * width
-        print(
-            f"There are no obstacles in this room. Can fit a carpet with area of {area} cm2."
-        )
-        return area
-    if count_obstacles == height * width:
-        print(
-            "There are only obstacles in this room. Can fit no carpet in here, unless you have a flying one."
-        )
-        return 0
-
-    return find_biggest_rectangle(grid)
-
-
 def main() -> int:
     """Entry point — dispatch to square or rectangle based on subcommand."""
     args = parse_args()
 
     if args.command == "square":
-        return run_square(args.input_file)
+        return SqrFinder.run(args.input_file)
     elif args.command == "rectangle":
-        return run_rectangle(args.input_file)
+        return RectFinder.run(args.input_file)
 
     return 0
 
