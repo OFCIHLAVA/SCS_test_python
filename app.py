@@ -197,7 +197,10 @@ class RectFinder:
                     popped_from_here += 1
                 else:
                     break
-
+            if (
+                popped_from_here + 1 == checked_field_score
+            ):  # This would be a square - ignore it
+                continue
             biggest_area_rect_this_field: int = (
                 popped_from_here + 1
             ) * checked_field_score
