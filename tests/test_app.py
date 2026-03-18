@@ -209,6 +209,18 @@ class TestSqrFinderRun:
         p = _write_grid(tmp_path, text)
         assert SqrFinder.run(p) == 4
 
+    def test_verticaly_split_room(self, tmp_path: Path):
+        p = _write_grid(tmp_path, "5 5\n..x..\n..x..\n..x..\n..x..\n..x..")
+        assert SqrFinder.run(p) == 4
+
+    def test_horizontaly_split_room(self, tmp_path: Path):
+        p = _write_grid(tmp_path, "5 5\n.....\n.....\nxxxxx\n.....\n.....")
+        assert SqrFinder.run(p) == 4
+
+    def test_cross_split_room(self, tmp_path: Path):
+        p = _write_grid(tmp_path, "5 5\n..x..\n..x..\nxxxxx\n..x..\n..x..")
+        assert SqrFinder.run(p) == 4
+
 
 # ── RectFinder internals ────────────────────────────────────────────────────
 

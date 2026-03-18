@@ -99,4 +99,4 @@ The app validates the input and exits with a clear error if:
 ## How It Works
 
 - **Square mode** — uses a table where each cell stores the side length of the largest square whose bottom-right corner is at that cell. The answer is the maximum value squared.
-- **Rectangle mode** — builds a height histogram per column (how many consecutive empty cells above), then for each row scans left/right to find the widest rectangle at each cell's height. The answer is the largest area found.
+- **Rectangle mode** — builds a height histogram per column (how many consecutive empty cells above), then for each row scans left/right to find the widest rectangle at each cell's height. The answer is the largest area found. **NOTE: this mode intentionaly ignore sqyare shaped rectangles**.
